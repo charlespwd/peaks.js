@@ -195,15 +195,6 @@ define('peaks', [
 
     if (instance.options.keyboard) keyboard.init(instance);
 
-    instance.player = new AudioPlayer(instance);
-    instance.player.init(instance.options.mediaElement);
-
-    instance.waveform = new Waveform(instance);
-    instance.waveform.init(buildUi(instance.container));
-
-    // TODO maybe to move in the player object
-    instance.seeking = false;
-
     instance.on("waveformOverviewReady", function () {
       instance.waveform.openZoomView();
 
@@ -216,6 +207,15 @@ define('peaks', [
       }
 
     });
+
+    instance.player = new AudioPlayer(instance);
+    instance.player.init(instance.options.mediaElement);
+
+    instance.waveform = new Waveform(instance);
+    instance.waveform.init(buildUi(instance.container));
+
+    // TODO maybe to move in the player object
+    instance.seeking = false;
 
     return instance;
   };

@@ -1,5 +1,9 @@
 ## Change Log
 
+### 0.4.4 (2015/02/02 10:02 +00:00)
+- Support for local WaveformData. (@charlespwd)
+- Fix bug where waveformOverviewReady would not fire in Firefox. (@charlespwd)
+
 ### 0.4.3 (2014/10/15 12:34 +00:00)
 - [#101](https://github.com/bbcrd/peaks.js/pull/101) deamdify and browserify back to optionalDependencies. (@oncletom)
 
