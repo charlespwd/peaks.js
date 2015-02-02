@@ -58,41 +58,56 @@ define([
           }
         }
 
-        // WebAudio Builder
-        if (!options.dataUri && WaveformData.builders.webaudio.getAudioContext()) {
-          requestType = 'arraybuffer';
-          uri = options.mediaElement.currentSrc || options.mediaElement.src;
-          builder = 'webaudio';
-        }
-
-        if(!uri) {
-          throw new Error("Unable to determine a compatible dataUri format for this browser.");
-        }
-
-        // open an XHR request to the data source file
-        xhr.open('GET', uri, true);
-
-        if(isXhr2) {
-          try {
-            xhr.responseType = requestType;
-          }
-            // some browsers like Safari 6 do handle XHR2 but not the json response type
-            // doing only a try/catch fails in IE9
-          catch (e){}
-        }
-
-        xhr.onload = function(response) {
-          if (this.readyState === 4 && this.status === 200) {
-            if (builder){
-              WaveformData.builders[builder](response.target.response, options.waveformBuilderOptions, that.handleRemoteData.bind(that));
+        if (options.localData) {
+          // Bypass the XHR request when you can provide a Javascript Object
+          // locally (e.g. when recording audio).
+          if (typeof options.localData === 'object') {
+            if (['sample_rate', 'sample_per_pixel', 'bits', 'length', 'data'].every(function(key) { return key in options.localData; })) {
+              this.handleRemoteData(options.localData); // HACK.
             }
             else {
-              that.handleRemoteData(response.target, xhr);
+              throw new Error("Unable to bypass XHR with localData: format is incompatible.");
             }
           }
-        };
+        }
+        else {
+          // WebAudio Builder
+          if (!options.dataUri && WaveformData.builders.webaudio.getAudioContext()) {
+            requestType = 'arraybuffer';
+            uri = options.mediaElement.currentSrc || options.mediaElement.src;
+            builder = 'webaudio';
+          }
 
-        xhr.send();
+          if(!uri) {
+            throw new Error("Unable to determine a compatible dataUri format for this browser.");
+          }
+
+          // open an XHR request to the data source file
+          xhr.open('GET', uri, true);
+
+          if(isXhr2) {
+            try {
+              xhr.responseType = requestType;
+            }
+            // some browsers like Safari 6 do handle XHR2 but not the json response type
+            // doing only a try/catch fails in IE9
+            catch (e){}
+          }
+
+          xhr.onload = function(response) {
+            if (this.readyState === 4 && this.status === 200) {
+              if (builder){
+                WaveformData.builders[builder](response.target.response, options.waveformBuilderOptions, that.handleRemoteData.bind(that));
+              }
+              else {
+                that.handleRemoteData(response.target, xhr);
+              }
+            }
+          };
+
+          xhr.send();
+
+        }
       },
 
       /**
