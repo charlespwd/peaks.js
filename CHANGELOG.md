@@ -1,6 +1,7 @@
 ## Change Log
 
 ### 0.4.4 (2015/02/02 10:02 +00:00)
+- Support for disabling the zoomView. (@charlespwd)
 - Support for local WaveformData. (@charlespwd)
 - Fix bug where waveformOverviewReady would not fire in Firefox. (@charlespwd)
 
