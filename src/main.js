@@ -68,6 +68,10 @@ define('peaks', [
        */
       keyboard:              false,
       /**
+       * Enable the ZoomView
+       */
+      zoomView:              true,
+      /**
        * Keyboard nudge increment in seconds (left arrow/right arrow)
        */
       nudgeIncrement:        0.01,
@@ -195,18 +199,20 @@ define('peaks', [
 
     if (instance.options.keyboard) keyboard.init(instance);
 
-    instance.on("waveformOverviewReady", function () {
-      instance.waveform.openZoomView();
+    if (instance.options.zoomView) {
+      instance.on("waveformOverviewReady", function () {
+        instance.waveform.openZoomView();
 
-      if (instance.options.segments) { // Any initial segments to be displayed?
-        instance.segments.addSegment(instance.options.segments);
-      }
+        if (instance.options.segments) { // Any initial segments to be displayed?
+          instance.segments.addSegment(instance.options.segments);
+        }
 
-      if (instance.options.points) { //Any initial points to be displayed?
-        instance.points.addPoint(instance.options.points);
-      }
+        if (instance.options.points) { //Any initial points to be displayed?
+          instance.points.addPoint(instance.options.points);
+        }
 
-    });
+      });
+    }
 
     instance.player = new AudioPlayer(instance);
     instance.player.init(instance.options.mediaElement);
