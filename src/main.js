@@ -79,6 +79,10 @@ define('peaks', [
        */
       zoomView:              true,
       /**
+       * Disable the 'Zoom' in the zoomview.
+       */
+      noZoom:                false,
+      /**
        * Keyboard nudge increment in seconds (left arrow/right arrow)
        */
       nudgeIncrement:        0.01,

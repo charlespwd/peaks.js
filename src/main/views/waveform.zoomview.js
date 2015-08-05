@@ -27,15 +27,14 @@ define([
     that.playing = false;
 
     that.intermediateData = null;
-    that.data = that.rootData.resample({
-      scale: that.options.zoomLevels[peaks.zoom.getZoom()]
-    });
-    that.playheadPixel = that.data.at_time(that.options.mediaElement.currentTime);
-    that.pixelLength = that.data.adapter.length;
-    that.frameOffset = 0; // the pixel offset of the current frame being displayed
 
     that.width = container.clientWidth;
     that.height = container.clientHeight || that.options.height;
+
+    that.data = that.rootData.resample(that.resampleOptions());
+    that.playheadPixel = that.data.at_time(that.options.mediaElement.currentTime);
+    that.pixelLength = that.data.adapter.length;
+    that.frameOffset = 0; // the pixel offset of the current frame being displayed
 
     that.data.offset(that.frameOffset, that.frameOffset + that.width);
 
@@ -163,7 +162,7 @@ define([
 
     that.peaks.on("window_resized", function (width, newWaveformData) {
       that.width = width;
-      that.data = newWaveformData;
+      that.data = newWaveformData.resample(that.resampleOptions());
       that.stage.setWidth(that.width);
       that.updateZoomWaveform(that.frameOffset);
       that.peaks.emit("zoomview_resized");
@@ -247,6 +246,11 @@ define([
 
     // we must not have a negative pixelOffset
     if (pixelOffset < 0) {
+      pixelOffset = 0;
+    }
+
+    // never offset when there's noZoom.
+    if (that.options.noZoom) {
       pixelOffset = 0;
     }
 
@@ -356,6 +360,17 @@ define([
 
     that.syncPlayhead(pixelIndex);
     that.updateZoomWaveform(that.frameOffset);
+  };
+
+  WaveformZoomView.prototype.resampleOptions = function() {
+    var that = this;
+    var resampleOptions = {};
+    if (that.options.noZoom) {
+      resampleOptions.width = that.width;
+    } else {
+      resampleOptions.scale = that.options.zoomLevels[that.peaks.zoom.getZoom()];
+    }
+    return resampleOptions;
   };
 
   return WaveformZoomView;
