@@ -95,6 +95,26 @@ A working examples is provided in [`index.html`](index.html).
 
 Please [refer to the *Building Peaks* section](#building-peaks) to learn more about how to build Peaks for development or production purpose.
 
+## Generate waveform data
+
+Peaks uses waveform data files produced by [audiowaveform](https://github.com/bbcrd/audiowaveform). These can be generated in either binary (.dat) or JSON format. Binary format is preferred because of the smaller file size, but this is only compatible with [browsers that support Typed Arrays](http://caniuse.com/#feat=typedarrays).
+
+You should also use the `-b 8` option when generating waveform data files, as Peaks does not currently support 16-bit waveform data files, and also to minimise file size.
+
+To generate a binary waveform data file:
+
+```
+audiowaveform -i sample.mp3 -o sample.dat -b 8
+```
+
+To generate a JSON format waveform data file:
+
+```
+audiowaveform -i sample.mp3 -o sample.json -b 8
+```
+
+Refer to audiowaveform(1) for full details of the available command line options.
+
 ## Web Audio based waveforms
 
 Since `0.3.0`, Peaks can rely on Web Audio to generate waveforms.
@@ -124,10 +144,10 @@ var options = {
   /** REQUIRED OPTIONS **/
   // Containing element
   container: document.getElementById('peaks-container'),
-  
+
   // HTML5 Media element containing an audio track
   mediaElement: document.querySelector('audio'),
-  
+
   /** Optional config with defaults **/
   // URI to waveform data file in binary or JSON
   dataUri: {
@@ -135,38 +155,59 @@ var options = {
     json: '../test_data/sample.json',
   },
 
+  // async logging function
+  logger: console.error.bind(console),
+
   // default height of the waveform canvases in pixels
   height: 200,
-  
+
   // Array of zoom levels in samples per pixel (big >> small)
   zoomLevels: [512, 1024, 2048, 4096],
-  
+
   // Bind keyboard controls
   keyboard: false,
-  
+
   // Keyboard nudge increment in seconds (left arrow/right arrow)
   nudgeIncrement: 0.01,
-  
+
   // Colour for the in marker of segments
   inMarkerColor: '#a0a0a0',
-  
+
   // Colour for the out marker of segments
   outMarkerColor: '#a0a0a0',
-  
+
   // Colour for the zoomed in waveform
   zoomWaveformColor: 'rgba(0, 225, 128, 1)',
-  
+
   // Colour for the overview waveform
   overviewWaveformColor: 'rgba(0,0,0,0.2)',
-  
+
+  // Colour for the overview waveform rectangle that shows what the zoom view shows
+  overviewHighlightRectangleColor: 'grey',
+
   // Colour for segments on the waveform
   segmentColor: 'rgba(255, 161, 39, 1)',
-  
+
   // Colour of the play head
   playheadColor: 'rgba(0, 0, 0, 1)',
-  
+
+  // Colour of the play head text
+  playheadTextColor: '#aaa',
+
+  // the color of a point marker
+  pointMarkerColor: '#FF0000',
+
+  // Colour of the axis gridlines
+  axisGridlineColor: '#ccc',
+
+  // Colour of the axis labels
+  axisLabelColor: '#aaa',
+
   // Random colour per segment (overrides segmentColor)
   randomizeSegmentColor: true,
+
+  // Zoom view adapter to use. Valid adapters are: 'animated' (default) and 'static'
+  zoomAdapter: 'animated',
 
   // Array of initial segment objects with startTime and
   // endTime in seconds and a boolean for editable.
@@ -342,7 +383,7 @@ instance.segments.add([
 ]);
 ```
 
-## #`instance.segments.getSegments()`
+### `instance.segments.getSegments()`
 
 Returns an array of objects representing all displayed segments present on the timeline in the segment format.
 
@@ -420,7 +461,7 @@ If you are developing and want to repeatedly run tests in a browser on your mach
 
 See [COPYING](COPYING)
 
-This project includes sample audio from the [radio show Desert Island](http://en.wikipedia.org/wiki/File:Alice_walker_bbc_radio4_desert_island_discs_19_05_2013.flac), used under the terms of the [Creative Commons 3.0 Unported License](http://creativecommons.org/licenses/by/3.0/).
+This project includes sample audio from the radio show [Desert Island Discs](http://en.wikipedia.org/wiki/File:Alice_walker_bbc_radio4_desert_island_discs_19_05_2013.flac), used under the terms of the [Creative Commons 3.0 Unported License](http://creativecommons.org/licenses/by/3.0/).
 
 # Authors
 
@@ -433,4 +474,4 @@ This project includes sample audio from the [radio show Desert Island](http://en
 
 # Copyright
 
-Copyright 2014 British Broadcasting Corporation
+Copyright 2014-2015 British Broadcasting Corporation

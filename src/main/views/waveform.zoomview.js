@@ -10,8 +10,9 @@ define([
   "peaks/waveform/waveform.axis",
   "peaks/waveform/waveform.mixins",
   "peaks/views/zooms/animated",
-  "Kinetic"
-  ], function (WaveformAxis, mixins, ZoomAnimation, Kinetic) {
+  "peaks/views/zooms/static",
+  "konva"
+  ], function (WaveformAxis, mixins, AnimatedZoomAdapter, StaticZoomAdapter, Konva) {
   'use strict';
 
   function WaveformZoomView(waveformData, container, peaks) {
@@ -38,16 +39,16 @@ define([
 
     that.data.offset(that.frameOffset, that.frameOffset + that.width);
 
-    that.stage = new Kinetic.Stage({
+    that.stage = new Konva.Stage({
       container: container,
       width: that.width,
       height: that.height
     });
 
-    that.zoomWaveformLayer = new Kinetic.Layer();
-    that.uiLayer = new Kinetic.Layer();
+    that.zoomWaveformLayer = new Konva.Layer();
+    that.uiLayer = new Konva.Layer();
 
-    that.background = new Kinetic.Rect({
+    that.background = new Konva.Rect({
       x: 0,
       y: 0,
       width: that.width,
@@ -135,6 +136,8 @@ define([
     });
 
     that.peaks.on("zoom.update", function (current_scale, previous_scale) {
+      var adapter, zoomAdapterMap;
+
       if (that.playing) {
         return;
       }
@@ -144,8 +147,17 @@ define([
           scale: current_scale
         });
 
-        var animation = ZoomAnimation.init(current_scale, previous_scale, that);
-        animation.start();
+        zoomAdapterMap = {
+          'animated': AnimatedZoomAdapter,
+          'static': StaticZoomAdapter
+        };
+
+        if (zoomAdapterMap[that.peaks.options.zoomAdapter] === undefined) {
+          throw new Error("Invalid zoomAdapter: " + that.peaks.options.zoomAdapter);
+        }
+
+        adapter = zoomAdapterMap[that.peaks.options.zoomAdapter].init(current_scale, previous_scale, that);
+        adapter.start();
       }
     });
 
@@ -175,12 +187,12 @@ define([
 
   WaveformZoomView.prototype.createZoomWaveform = function() {
     var that = this;
-    that.zoomWaveformShape = new Kinetic.Shape({
+    that.zoomWaveformShape = new Konva.Shape({
       fill: that.options.zoomWaveformColor,
       strokeWidth: 0
     });
 
-    that.zoomWaveformShape.setDrawFunc(mixins.waveformDrawFunction.bind(that.zoomWaveformShape, that));
+    that.zoomWaveformShape.sceneFunc(mixins.waveformDrawFunction.bind(that.zoomWaveformShape, that));
 
     that.zoomWaveformLayer.add(that.zoomWaveformShape);
     that.stage.add(that.zoomWaveformLayer);
@@ -190,23 +202,23 @@ define([
   WaveformZoomView.prototype.createUi = function() {
     var that = this;
 
-    that.zoomPlayheadLine = new Kinetic.Line({
+    that.zoomPlayheadLine = new Konva.Line({
       points: [0.5, 0, 0.5, that.height],
       stroke: that.options.playheadColor,
       strokeWidth: 1
     });
 
-    that.zoomPlayheadText = new Kinetic.Text({
+    that.zoomPlayheadText = new Konva.Text({
       x:2,
       y: 12,
       text: "00:00:00",
       fontSize: 11,
       fontFamily: 'sans-serif',
-      fill: '#aaa',
+      fill: that.options.playheadTextColor,
       align: 'right'
     });
 
-    that.zoomPlayheadGroup = new Kinetic.Group({
+    that.zoomPlayheadGroup = new Konva.Group({
       x: 0,
       y: 0
     }).add(that.zoomPlayheadLine).add(that.zoomPlayheadText);
@@ -218,11 +230,28 @@ define([
   };
 
   WaveformZoomView.prototype.updateZoomWaveform = function (pixelOffset) {
+    if (isNaN(pixelOffset)) throw new Error("WaveformZoomView#updateZoomWaveform passed a pixel offset that is not a number: " + pixelOffset);
     var that = this;
 
-    that.frameOffset = pixelOffset;
     that.pixelLength = that.data.adapter.length;
-    that.data.offset(pixelOffset, pixelOffset + that.width);
+
+    // total waveform is shorter than viewport, so reset the offset to 0
+    if (that.pixelLength < that.width) {
+      pixelOffset = 0;
+    }
+
+    // new position is beyond the size of the waveform, so set it to the very last possible position
+    if (pixelOffset > that.pixelLength) {
+      pixelOffset = that.pixelLength - that.width;
+    }
+
+    // we must not have a negative pixelOffset
+    if (pixelOffset < 0) {
+      pixelOffset = 0;
+    }
+
+    that.frameOffset = pixelOffset;
+    that.data.offset(pixelOffset, Math.min(pixelOffset + that.width, that.pixelLength));
 
     var display = (that.playheadPixel >= pixelOffset) && (that.playheadPixel <= pixelOffset + that.width); //i.e. playhead is within the zoom frame width
 
@@ -262,7 +291,7 @@ define([
     var frameSeconds = 0;
     var pixelsPerSecond = that.data.pixels_per_second;
 
-    that.playheadLineAnimation = new Kinetic.Animation(function (frame) {
+    that.playheadLineAnimation = new Konva.Animation(function (frame) {
       var time = frame.time;
 
       var seconds = time / 1000;
@@ -275,6 +304,8 @@ define([
   };
 
   WaveformZoomView.prototype.newFrame = function (frameOffset) {
+    if (isNaN(frameOffset)) throw new Error("WaveformZoomView#newFrame passed a frame offset that is not a number: " + frameOffset);
+
     var nextOffset = frameOffset + this.width;
 
     if (nextOffset < this.data.adapter.length){
@@ -288,6 +319,8 @@ define([
   };
 
   WaveformZoomView.prototype.syncPlayhead = function (pixelIndex) {
+    if (isNaN(pixelIndex)) throw new Error("WaveformZoomView#syncPlayhead passed a pixel index that is not a number: " + pixelIndex);
+
     var that = this;
     var display = (pixelIndex >= that.frameOffset) && (pixelIndex <= that.frameOffset + that.width);
 
@@ -306,24 +339,18 @@ define([
   };
 
   WaveformZoomView.prototype.seekFrame = function (pixelIndex, offset) {
+    if (isNaN(pixelIndex)) throw new Error("WaveformZoomView#seekFrame passed a pixel index that is not a number: " + pixelIndex);
+
     var that = this;
     var upperLimit = that.data.adapter.length - that.width;
     var direction = pixelIndex < that.data.offset_start ? 'backwards' : 'onwards';
 
     if (!that.data.in_offset(pixelIndex)) {
-      if (pixelIndex > that.width && pixelIndex < upperLimit) {
-        if (direction === 'backwards') {
-          that.frameOffset = that.data.offset_start - that.width;
-        }
-        else {
-          that.frameOffset = pixelIndex - (offset || 0);
-        }
-      }
-      else if (pixelIndex >= upperLimit) {
-        that.frameOffset = upperLimit;
-      }
-      else {
+      that.frameOffset = pixelIndex - Math.round(that.width / 2);
+      if (that.frameOffset <= 0) {
         that.frameOffset = 0;
+      } else if (that.frameOffset + that.width >= that.data.adapter.length) {
+        that.frameOffset = upperLimit;
       }
     }
 

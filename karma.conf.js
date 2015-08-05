@@ -25,7 +25,7 @@ module.exports = function (config) {
       { pattern: 'test_data/*', included: false },
       { pattern: 'node_modules/eventemitter2/lib/*.js', included: false },
       { pattern: 'node_modules/waveform-data/dist/*.js', included: false },
-      { pattern: 'node_modules/kinetic/*.js', included: false },
+      { pattern: 'node_modules/konva/*.js', included: false },
       { pattern: 'test/*.html' },
       { pattern: 'src/**/*.js', included: false },
       { pattern: 'test/unit/**/*.js', included: false },
@@ -144,6 +144,6 @@ module.exports = function (config) {
   });
 
   config.set({
-    browsers: isCI ? filterBrowsers(config.customLaunchers, /^BS/) : ['Chrome', 'Safari', 'Firefox', 'IE9 - Win7']
+    browsers: isCI ? filterBrowsers(config.customLaunchers, /^BS/) : (isFast ? ['Chrome', 'Firefox'] : ['Chrome', 'Safari', 'Firefox', 'IE9 - Win7'])
   });
 };
