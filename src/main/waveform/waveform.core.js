@@ -63,7 +63,7 @@ define([
           // locally (e.g. when recording audio).
           if (typeof options.localData === 'object') {
             if (['sample_rate', 'samples_per_pixel', 'bits', 'length', 'data'].every(function(key) { return key in options.localData; })) {
-              this.handleRemoteData(options.localData); // HACK.
+              this.handleRemoteData(null, options.localData); // HACK.
             }
             else {
               throw new Error("Unable to bypass XHR with localData: format is incompatible.");
